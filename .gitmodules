@@ -1,6 +1,5 @@
 [submodule "deps/test-framework"]
 	path = deps/test-framework
-	url = /home/dza/src/sh/test-framework
+	url = git://codeberg.org/dza/sh-test-framework.git
 	branch = dev
-	update = merge
 	ignore = all
