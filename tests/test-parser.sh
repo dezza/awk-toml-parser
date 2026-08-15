@@ -27,17 +27,17 @@ test_query_values() {
   config=$TEST_TMPDIR/values.toml
   printf '%s\n' \
     '# comment' \
-    'root-key = bare/value # trailing comment' \
+    'root-key = ${ROOT}/bare$value # trailing comment' \
     '[group.one-two] # section comment' \
     'string = "quoted \"text\" and \\ slash"' \
     'lines = "first\nsecond"' \
     'tab = "left\tright"' \
     'enabled = true' \
     'disabled = false' \
-    'items = ["one", "two"]' \
+    'items = ["$ONE", "${TWO}/value"]' \
     'empty = []' >"$config"
 
-  assert_query 'bare value and comments' bare/value \
+  assert_query 'bare value and comments' '${ROOT}/bare$value' \
     "$config" '' root-key
   assert_query 'quoted string escapes' 'quoted "text" and \ slash' \
     "$config" group.one-two string
@@ -47,7 +47,8 @@ test_query_values() {
     "$config" group.one-two tab
   assert_query 'true boolean' true "$config" group.one-two enabled
   assert_query 'false boolean' false "$config" group.one-two disabled
-  assert_query 'string array' one,two "$config" group.one-two items
+  assert_query 'string array' '$ONE,${TWO}/value' \
+    "$config" group.one-two items
   assert_query 'empty array' '' "$config" group.one-two empty
   assert_query 'default value' fallback \
     "$config" group.one-two missing fallback

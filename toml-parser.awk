@@ -117,7 +117,7 @@ function is_boolean(text) {
 }
 
 function is_bare(text) {
-  return text ~ /^[A-Za-z0-9_+@.\/:=~-]+[[:space:]]*(#.*)?$/
+  return text ~ /^[A-Za-z0-9_+@.\/:=~${}-]+[[:space:]]*(#.*)?$/
 }
 
 function parse_atom(text,    value) {
@@ -131,7 +131,7 @@ function is_array(text) {
 }
 
 function valid_array_item(text) {
-  return text ~ /^[A-Za-z0-9_+@.=:\/~-]+$/
+  return text ~ /^[A-Za-z0-9_+@.=:\/~${}-]+$/
 }
 
 function array_body(text,    body) {
