@@ -55,18 +55,18 @@ function trim(text) {
 }
 
 function is_section(text) {
-  return text ~ /^[[:space:]]*\[[A-Za-z0-9_.-]+\][[:space:]]*(#.*)?$/
+  return text ~ /^[[:space:]]*\[\[?[^][]+\]\]?[[:space:]]*(#.*)?$/
 }
 
 function parse_section(text,    name) {
   name = text
-  sub(/^[[:space:]]*\[/, "", name)
-  sub(/\][[:space:]]*(#.*)?$/, "", name)
+  sub(/^[[:space:]]*\[\[?/, "", name)
+  sub(/\]\]?[[:space:]]*(#.*)?$/, "", name)
   return name
 }
 
 function is_assignment(text) {
-  return text ~ /^[[:space:]]*[A-Za-z0-9_.-]+[[:space:]]*=/
+  return text ~ /^[[:space:]]*[A-Za-z0-9_.\/~"-]+[[:space:]]*=/
 }
 
 function parse_key(text,    name) {
@@ -127,7 +127,7 @@ function parse_atom(text,    value) {
 }
 
 function is_array(text) {
-  return text ~ /^\[[[:space:]]*("[^"]*"[[:space:]]*(,[[:space:]]*"[^"]*"[[:space:]]*)*)?\][[:space:]]*(#.*)?$/
+  return text ~ /^\[[[:space:]]*("[^"]*"[[:space:]]*(,[[:space:]]*"[^"]*"[[:space:]]*)*,?[[:space:]]*)?\][[:space:]]*(#.*)?$/
 }
 
 function valid_array_item(text) {
@@ -199,13 +199,22 @@ function emit(name, value) {
 }
 
 BEGIN {
-    failed = 0
+  array_line = ""
+  failed = 0
     found = 0
     section = ""
     parse_args()
 }
 
 {
+  if (array_line != "") {
+    array_line = array_line " " trim($0)
+    if (array_line !~ /\][[:space:]]*(#.*)?$/)
+      next
+    $0 = array_line
+    array_line = ""
+  }
+
   if ($0 ~ /^[[:space:]]*(#.*)?$/)
     next
 
@@ -217,10 +226,17 @@ BEGIN {
   if (!is_assignment($0))
     die("unsupported syntax")
 
+  if (raw_value($0) ~ /^\[[[:space:]]*$/) {
+    array_line = $0
+    next
+  }
+
   emit(parse_key($0), parse_value(raw_value($0)))
 }
 
 END {
+  if (!failed && array_line != "")
+    die("unterminated array")
   if (!failed && query_mode && !found && have_default)
     print default_value
 }

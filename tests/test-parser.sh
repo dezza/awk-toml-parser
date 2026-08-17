@@ -56,6 +56,24 @@ test_query_values() {
     "$TEST_TMPDIR/missing.toml" any key fallback
 }
 
+test_extended_keys_and_arrays() {
+  config=$TEST_TMPDIR/extended.toml
+  printf '%s\n' \
+    'map."quoted-key" = 4' \
+    '[group."/absolute/path"]' \
+    'items = [' \
+    '  "first",' \
+    '  "${ROOT}/second",' \
+    '] # trailing comment' \
+    '[[repeated.group]]' \
+    'enabled = true' >"$config"
+
+  assert_query 'quoted dotted key' 4 "$config" '' 'map."quoted-key"'
+  assert_query 'quoted section and multiline array' \
+    'first,${ROOT}/second' "$config" 'group."/absolute/path"' items
+  assert_query 'array of tables' true "$config" repeated.group enabled
+}
+
 test_parse_fields() {
   config=$TEST_TMPDIR/fields.toml
   printf '%s\n' \
@@ -93,5 +111,6 @@ test_errors() {
 }
 
 test_case 'query values' test_query_values
+test_case 'extended keys and arrays' test_extended_keys_and_arrays
 test_case 'parse fields' test_parse_fields
 test_case 'errors' test_errors
