@@ -110,7 +110,29 @@ test_errors() {
     "$TEST_PROJECT_DIR/toml-get.sh" "$config"
 }
 
+test_check() {
+  assert_success 'accepts empty input' quietly \
+    "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk" /dev/null
+  assert_failure 'detects failure status' false
+  actual=$(test_tmpdir nested)
+  assert_equal 'creates relative temporary directory' \
+    "$actual" "$TEST_TMPDIR/nested"
+}
+
+test_hook() {
+  :
+}
+
+test_hooks() {
+  assert_success 'runs hooks' true
+}
+
 test_case 'query values' test_query_values
 test_case 'extended keys and arrays' test_extended_keys_and_arrays
 test_case 'parse fields' test_parse_fields
 test_case 'errors' test_errors
+test_case 'check' test_check
+TEST_SETUP=test_hook
+TEST_TEARDOWN=test_hook
+test_case 'hooks' test_hooks
+unset TEST_SETUP TEST_TEARDOWN
