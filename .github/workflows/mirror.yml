@@ -1,4 +1,6 @@
 name: Mirror
+permissions:
+    actions: write
 
 on:
   schedule:

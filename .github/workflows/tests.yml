@@ -1,0 +1,51 @@
+name: Tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Mirror]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Run tests
+        shell: bash
+        run: |
+          output=$(mktemp)
+          status=0
+
+          "deps/test-framework/sh/test/run.sh" "deps/test-framework" \
+            "tests" | tee "$output" || status=$?
+
+          passed=$(grep -c '^  PASS:' "$output" || :)
+          tests=$(sed -n \
+            's/^TESTS: \([0-9][0-9]*\), ASSERTIONS: .*/\1/p' \
+            "$output")
+          assertions=$(sed -n \
+            's/^TESTS: [0-9][0-9]*, ASSERTIONS: \([0-9][0-9]*\),.*/\1/p' \
+            "$output")
+          skipped=$(sed -n \
+            's/^TESTS: .*SKIPPED: \([0-9][0-9]*\),.*/\1/p' \
+            "$output")
+
+          {
+            printf '## Tests\n\n'
+            printf '**%s/%s assertions passed**\n\n' \
+              "$passed" "$assertions"
+            printf 'Tests: %s · Skipped: %s\n' "$tests" "$skipped"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit "$status"
