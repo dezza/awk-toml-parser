@@ -30,6 +30,7 @@ test_query_values() {
     'root-key = ${ROOT}/bare$value # trailing comment' \
     '[group.one-two] # section comment' \
     'string = "quoted \"text\" and \\ slash"' \
+    "literal = 'literal \\ text'" \
     'lines = "first\nsecond"' \
     'tab = "left\tright"' \
     'enabled = true' \
@@ -41,6 +42,8 @@ test_query_values() {
     "$config" '' root-key
   assert_query 'quoted string escapes' 'quoted "text" and \ slash' \
     "$config" group.one-two string
+  assert_query 'literal string' 'literal \ text' \
+    "$config" group.one-two literal
   assert_query 'newline escape' "$(printf 'first\nsecond')" \
     "$config" group.one-two lines
   assert_query 'tab escape' "$(printf 'left\tright')" \
@@ -63,7 +66,7 @@ test_extended_keys_and_arrays() {
     '[group."/absolute/path"]' \
     'items = [' \
     '  "first",' \
-    '  "${ROOT}/second",' \
+    "  '\${ROOT}/second'," \
     '] # trailing comment' \
     '[[repeated.group]]' \
     'enabled = true' >"$config"
