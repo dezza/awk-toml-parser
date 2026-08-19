@@ -82,14 +82,24 @@ function raw_value(text,    value) {
   return trim(value)
 }
 
-function is_string(text) {
-  return text ~ /^"([^"\\]|\\["\\nrt])*"[[:space:]]*(#.*)?$/
+function string_length(text) {
+  if (!match(text, /^("([^"\\]|\\["\\nrt])*"|'[^']*')/))
+    return 0
+  return RLENGTH
 }
 
-function parse_string(text,    value, result, position, character) {
-  value = text
-  sub(/^"/, "", value)
-  sub(/"[[:space:]]*(#.*)?$/, "", value)
+function is_string(text,    size) {
+  size = string_length(text)
+  return size && substr(text, size + 1) ~ /^[[:space:]]*(#.*)?$/
+}
+
+function parse_string(text,    quote, value, result, position, character) {
+  quote = substr(text, 1, 1)
+  value = substr(text, 2)
+  sub(quote "[[:space:]]*(#.*)?$", "", value)
+
+  if (quote == "'")
+    return value
 
   result = ""
   for (position = 1; position <= length(value); position++) {
@@ -127,7 +137,7 @@ function parse_atom(text,    value) {
 }
 
 function is_array(text) {
-  return text ~ /^\[[[:space:]]*("[^"]*"[[:space:]]*(,[[:space:]]*"[^"]*"[[:space:]]*)*,?[[:space:]]*)?\][[:space:]]*(#.*)?$/
+  return text ~ /^\[.*\][[:space:]]*(#.*)?$/
 }
 
 function valid_array_item(text) {
@@ -141,23 +151,30 @@ function array_body(text,    body) {
   return body
 }
 
-function parse_array(text,    rest, result, item) {
-  rest = array_body(text)
+function parse_array(text,    rest, result, item, size) {
+  rest = trim(array_body(text))
   result = ""
 
-  while (rest !~ /^[[:space:]]*$/) {
-    if (!match(rest, /^[[:space:]]*"[^"]*"[[:space:]]*(,|$)/))
+  while (rest != "") {
+    size = string_length(rest)
+    if (!size)
       die("invalid array")
 
-    item = substr(rest, RSTART, RLENGTH)
-    sub(/^[[:space:]]*"/, "", item)
-    sub(/"[[:space:]]*(,|$)$/, "", item)
-
+    item = substr(rest, 1, size)
+    item = parse_string(item)
     if (!valid_array_item(item))
       die("invalid array value")
 
     result = result (result == "" ? "" : ",") item
-        rest = RLENGTH < length(rest) ? substr(rest, RLENGTH + 1) : ""
+    rest = trim(substr(rest, size + 1))
+
+    if (rest == "")
+      break
+
+    if (substr(rest, 1, 1) != ",")
+      die("invalid array")
+
+    rest = trim(substr(rest, 2))
   }
 
   return result
