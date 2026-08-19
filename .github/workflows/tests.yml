@@ -17,9 +17,13 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
+      - name: Checkout submodules
+        run: |
+          git -c url.https://codeberg.org/.insteadOf=ssh://git@codeberg.org/ \
+            submodule update --init --depth=1 --recursive
 
       - name: Run tests
         shell: bash
