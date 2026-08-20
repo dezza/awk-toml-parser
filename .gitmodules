@@ -1,5 +1,5 @@
 [submodule "deps/test-framework"]
 	path = deps/test-framework
-	url = ssh://git@codeberg.org/dza/sh-test-framework.git
+	url = https://codeberg.org/dza/sh-test-framework
 	branch = dev
 	ignore = all
