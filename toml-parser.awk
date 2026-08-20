@@ -82,6 +82,42 @@ function raw_value(text,    value) {
   return trim(value)
 }
 
+function strip_comment(text,    character, position, quote) {
+  quote = ""
+  for (position = 1; position <= length(text); position++) {
+    character = substr(text, position, 1)
+    if (quote != "") {
+      if (quote == "\"" && character == "\\")
+        position++
+      else if (character == quote)
+        quote = ""
+    } else if (character == "\"" || character == "'") {
+      quote = character
+    } else if (character == "#") {
+      return substr(text, 1, position - 1)
+    }
+  }
+  return text
+}
+
+function array_complete(text,    character, position, quote) {
+  quote = ""
+  for (position = 1; position <= length(text); position++) {
+    character = substr(text, position, 1)
+    if (quote != "") {
+      if (quote == "\"" && character == "\\")
+        position++
+      else if (character == quote)
+        quote = ""
+    } else if (character == "\"" || character == "'") {
+      quote = character
+    } else if (character == "]") {
+      return 1
+    }
+  }
+  return 0
+}
+
 function string_length(text) {
   if (!match(text, /^("([^"\\]|\\["\\nrt])*"|'[^']*')/))
     return 0
@@ -225,8 +261,8 @@ BEGIN {
 
 {
   if (array_line != "") {
-    array_line = array_line " " trim($0)
-    if (array_line !~ /\][[:space:]]*(#.*)?$/)
+    array_line = array_line " " trim(strip_comment($0))
+    if (!array_complete(array_line))
       next
     $0 = array_line
     array_line = ""
@@ -243,12 +279,13 @@ BEGIN {
   if (!is_assignment($0))
     die("unsupported syntax")
 
-  if (raw_value($0) ~ /^\[[[:space:]]*$/) {
-    array_line = $0
+  current_value = raw_value($0)
+  if (current_value ~ /^\[/ && !array_complete(current_value)) {
+    array_line = strip_comment($0)
     next
   }
 
-  emit(parse_key($0), parse_value(raw_value($0)))
+  emit(parse_key($0), parse_value(current_value))
 }
 
 END {

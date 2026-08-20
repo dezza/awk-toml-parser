@@ -64,16 +64,17 @@ test_extended_keys_and_arrays() {
   printf '%s\n' \
     'map."quoted-key" = 4' \
     '[group."/absolute/path"]' \
-    'items = [' \
-    '  "first",' \
+    'items = ["first", # first item' \
     "  '\${ROOT}/second'," \
+    '  "third-value",' \
     '] # trailing comment' \
     '[[repeated.group]]' \
     'enabled = true' >"$config"
 
   assert_query 'quoted dotted key' 4 "$config" '' 'map."quoted-key"'
   assert_query 'quoted section and multiline array' \
-    'first,${ROOT}/second' "$config" 'group."/absolute/path"' items
+    'first,${ROOT}/second,third-value' \
+    "$config" 'group."/absolute/path"' items
   assert_query 'array of tables' true "$config" repeated.group enabled
 }
 
