@@ -177,7 +177,7 @@ function is_array(text) {
 }
 
 function valid_array_item(text) {
-  return text ~ /^[A-Za-z0-9_+@.=:\/~${}-]+$/
+  return text ~ /^[A-Za-z0-9_+@.=:\/~${}"-]+$/
 }
 
 function array_body(text,    body) {

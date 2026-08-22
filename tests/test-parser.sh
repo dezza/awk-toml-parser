@@ -36,6 +36,7 @@ test_query_values() {
     'enabled = true' \
     'disabled = false' \
     'items = ["$ONE", "${TWO}/value"]' \
+    'arguments = ['\''--volume="$XDG_DATA_HOME"/data:/root/data'\'']' \
     'empty = []' >"$config"
 
   assert_query 'bare value and comments' '${ROOT}/bare$value' \
