@@ -236,9 +236,14 @@ function put_field(value) {
   printf "%s%c", value, 0
 }
 
+function dotted_key(prefix, name) {
+  return prefix == "" ? name : prefix "." name
+}
+
 function emit(name, value) {
   if (query_mode) {
-    if (section == wanted_section && name == wanted_key) {
+    if (dotted_key(section, name) == \
+        dotted_key(wanted_section, wanted_key)) {
       print value
       found = 1
       exit

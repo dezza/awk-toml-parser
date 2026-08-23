@@ -35,6 +35,7 @@ test_query_values() {
     'tab = "left\tright"' \
     'enabled = true' \
     'disabled = false' \
+    'display.color = blue' \
     'items = ["$ONE", "${TWO}/value"]' \
     'arguments = ['\''--volume="$XDG_DATA_HOME"/data:/root/data'\'']' \
     'empty = []' >"$config"
@@ -51,8 +52,13 @@ test_query_values() {
     "$config" group.one-two tab
   assert_query 'true boolean' true "$config" group.one-two enabled
   assert_query 'false boolean' false "$config" group.one-two disabled
+  assert_query 'dotted key as section lookup' blue \
+    "$config" group.one-two.display color
   assert_query 'string array' '$ONE,${TWO}/value' \
     "$config" group.one-two items
+  assert_query 'literal string array with quotes' \
+    '--volume="$XDG_DATA_HOME"/data:/root/data' \
+    "$config" group.one-two arguments
   assert_query 'empty array' '' "$config" group.one-two empty
   assert_query 'default value' fallback \
     "$config" group.one-two missing fallback
@@ -64,6 +70,8 @@ test_extended_keys_and_arrays() {
   config=$TEST_TMPDIR/extended.toml
   printf '%s\n' \
     'map."quoted-key" = 4' \
+    '[features]' \
+    'prevent_idle_sleep = true' \
     '[group."/absolute/path"]' \
     'items = ["first", # first item' \
     "  '\${ROOT}/second'," \
@@ -73,6 +81,8 @@ test_extended_keys_and_arrays() {
     'enabled = true' >"$config"
 
   assert_query 'quoted dotted key' 4 "$config" '' 'map."quoted-key"'
+  assert_query 'section as dotted key lookup' true \
+    "$config" '' features.prevent_idle_sleep
   assert_query 'quoted section and multiline array' \
     'first,${ROOT}/second,third-value' \
     "$config" 'group."/absolute/path"' items
