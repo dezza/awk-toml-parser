@@ -82,40 +82,39 @@ function raw_value(text,    value) {
   return trim(value)
 }
 
-function strip_comment(text,    character, position, quote) {
+function find_unquoted(text, wanted,    character, position, quote) {
   quote = ""
+
   for (position = 1; position <= length(text); position++) {
     character = substr(text, position, 1)
+
     if (quote != "") {
       if (quote == "\"" && character == "\\")
         position++
       else if (character == quote)
         quote = ""
-    } else if (character == "\"" || character == "'") {
-      quote = character
-    } else if (character == "#") {
-      return substr(text, 1, position - 1)
+      continue
     }
+
+    if (character == "\"" || character == "'") {
+      quote = character
+      continue
+    }
+
+    if (character == wanted)
+      return position
   }
-  return text
+
+  return 0
 }
 
-function array_complete(text,    character, position, quote) {
-  quote = ""
-  for (position = 1; position <= length(text); position++) {
-    character = substr(text, position, 1)
-    if (quote != "") {
-      if (quote == "\"" && character == "\\")
-        position++
-      else if (character == quote)
-        quote = ""
-    } else if (character == "\"" || character == "'") {
-      quote = character
-    } else if (character == "]") {
-      return 1
-    }
-  }
-  return 0
+function strip_comment(text,    position) {
+  position = find_unquoted(text, "#")
+  return position ? substr(text, 1, position - 1) : text
+}
+
+function array_complete(text) {
+  return find_unquoted(text, "]") != 0
 }
 
 function string_length(text) {
