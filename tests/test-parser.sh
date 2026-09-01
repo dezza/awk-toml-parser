@@ -1,12 +1,13 @@
 #!/bin/sh
 
-AWK=${AWK:-awk}
+AWK="${AWK:-awk}"
 
 toml_get() {
   "$TEST_PROJECT_DIR/toml-get.sh" "$@"
 }
 
 toml_parse() {
+  # shellcheck disable=SC2086
   "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk" "$@" |
     tr '\000' '%'
 }
@@ -25,21 +26,23 @@ assert_query() {
 
 test_query_values() {
   config=$TEST_TMPDIR/values.toml
-  printf '%s\n' \
-    '# comment' \
-    'root-key = ${ROOT}/bare$value # trailing comment' \
-    '[group.one-two] # section comment' \
-    'string = "quoted \"text\" and \\ slash"' \
-    "literal = 'literal \\ text'" \
-    'lines = "first\nsecond"' \
-    'tab = "left\tright"' \
-    'enabled = true' \
-    'disabled = false' \
-    'display.color = blue' \
-    'items = ["$ONE", "${TWO}/value"]' \
-    'arguments = ['\''--volume="$XDG_DATA_HOME"/data:/root/data'\'']' \
-    'empty = []' >"$config"
+  cat >"$config" <<-'EOF'
+	# comment
+	root-key = ${ROOT}/bare$value # trailing comment
+	[group.one-two] # section comment
+	string = "quoted \"text\" and \\ slash"
+	literal = 'literal \ text'
+	lines = "first\nsecond"
+	tab = "left\tright"
+	enabled = true
+	disabled = false
+	display.color = blue
+	items = ["$ONE", "${TWO}/value"]
+	arguments = ['--volume="$XDG_DATA_HOME"/data:/root/data']
+	empty = []
+	EOF
 
+  # shellcheck disable=SC2016
   assert_query 'bare value and comments' '${ROOT}/bare$value' \
     "$config" '' root-key
   assert_query 'quoted string escapes' 'quoted "text" and \ slash' \
@@ -54,8 +57,10 @@ test_query_values() {
   assert_query 'false boolean' false "$config" group.one-two disabled
   assert_query 'dotted key as section lookup' blue \
     "$config" group.one-two.display color
+  # shellcheck disable=SC2016
   assert_query 'string array' '$ONE,${TWO}/value' \
     "$config" group.one-two items
+  # shellcheck disable=SC2016
   assert_query 'literal string array with quotes' \
     '--volume="$XDG_DATA_HOME"/data:/root/data' \
     "$config" group.one-two arguments
@@ -68,21 +73,23 @@ test_query_values() {
 
 test_extended_keys_and_arrays() {
   config=$TEST_TMPDIR/extended.toml
-  printf '%s\n' \
-    'map."quoted-key" = 4' \
-    '[features]' \
-    'prevent_idle_sleep = true' \
-    '[group."/absolute/path"]' \
-    'items = ["first", # first item' \
-    "  '\${ROOT}/second'," \
-    '  "third-value",' \
-    '] # trailing comment' \
-    '[[repeated.group]]' \
-    'enabled = true' >"$config"
+  cat >"$config" <<-'EOF'
+	map."quoted-key" = 4
+	[features]
+	prevent_idle_sleep = true
+	[group."/absolute/path"]
+	items = ["first", # first item
+	  '${ROOT}/second',
+	  "third-value",
+	] # trailing comment
+	[[repeated.group]]
+	enabled = true
+	EOF
 
   assert_query 'quoted dotted key' 4 "$config" '' 'map."quoted-key"'
   assert_query 'section as dotted key lookup' true \
     "$config" '' features.prevent_idle_sleep
+  # shellcheck disable=SC2016
   assert_query 'quoted section and multiline array' \
     'first,${ROOT}/second,third-value' \
     "$config" 'group."/absolute/path"' items
@@ -91,13 +98,14 @@ test_extended_keys_and_arrays() {
 
 test_parse_fields() {
   config=$TEST_TMPDIR/fields.toml
-  printf '%s\n' \
-    'root = value' \
-    '' \
-    '[first]' \
-    'key = "one"' \
-    '[second.part]' \
-    'key = "two"' >"$config"
+  cat >"$config" <<-'EOF'
+	root = value
+
+	[first]
+	key = "one"
+	[second.part]
+	key = "two"
+	EOF
 
   actual=$(toml_parse "$config")
   assert_equal 'root and section fields' "$actual" \
@@ -108,6 +116,7 @@ test_errors() {
   config=$TEST_TMPDIR/invalid.toml
 
   printf '%s\n' '[invalid' >"$config"
+  # shellcheck disable=SC2086
   assert_status 'rejects invalid section' 2 quietly \
     "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk" "$config"
 
@@ -119,6 +128,7 @@ test_errors() {
   assert_status 'rejects invalid array item' 2 quietly \
     toml_get "$config" '' value
 
+  # shellcheck disable=SC2086
   assert_status 'rejects invalid parser invocation' 2 quietly \
     "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk"
   assert_status 'rejects invalid query invocation' 2 quietly \
@@ -126,6 +136,7 @@ test_errors() {
 }
 
 test_check() {
+  # shellcheck disable=SC2086
   assert_success 'accepts empty input' quietly \
     "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk" /dev/null
   assert_failure 'detects failure status' false
@@ -147,7 +158,5 @@ test_case 'extended keys and arrays' test_extended_keys_and_arrays
 test_case 'parse fields' test_parse_fields
 test_case 'errors' test_errors
 test_case 'check' test_check
-TEST_SETUP=test_hook
-TEST_TEARDOWN=test_hook
 test_case 'hooks' test_hooks
 unset TEST_SETUP TEST_TEARDOWN

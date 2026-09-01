@@ -1,15 +1,13 @@
 # Makefile: GNU Make; target: Linux
--include deps/test-framework/Makefile
+TFW_DIR ?= deps/test-framework
+-include $(TFW_DIR)/Makefile
 
-.PHONY: check coverage test update \
+.PHONY: check coverage test update-test-framework \
 	toml-parser-check-submodule toml-parser-update
 
-TOML_PARSER_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
-TEST_FRAMEWORK ?= $(TOML_PARSER_DIR)/deps/test-framework
-
-# deps/test-framework
-test: test-framework-test
-update-test-framework: test-framework-update
+test: tfw-test
+coverage: tfw-cov
+update-test-framework: tfw-update
 
 toml-parser-check-submodule:
 	if ! super=$$(git rev-parse --show-superproject-working-tree \
