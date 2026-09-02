@@ -35,7 +35,7 @@ jobs:
           output=$(mktemp)
           status=0
 
-          "deps/test-framework/sh/test/run.sh" "deps/test-framework" \
+          "deps/test-framework/src/run.sh" "deps/test-framework" \
             "tests" | tee "$output" || status=$?
 
           stats=$(awk '
