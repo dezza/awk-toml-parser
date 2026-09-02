@@ -6,7 +6,6 @@ TFW_DIR ?= deps/test-framework
 	toml-parser-check-submodule toml-parser-update
 
 test: tfw-test
-coverage: tfw-cov
 update-test-framework: tfw-update
 
 toml-parser-check-submodule:
