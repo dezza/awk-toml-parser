@@ -1,6 +1,7 @@
 name: Mirror
 permissions:
-    actions: write
+  actions: write
+  contents: write
 
 on:
   schedule:
@@ -11,19 +12,12 @@ jobs:
   mirror:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/create-github-app-token@v3
-        id: app-token
-        with:
-          private-key: ${{ secrets.MIRROR_PRIVATE_KEY }}
-          client-id: ${{ vars.MIRROR_CLIENT_ID }}
-
       - name: Mirror source refs
         env:
           SOURCE_URL: https://codeberg.org/dza/${{ github.event.repository.name }}.git
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           git clone --mirror "$SOURCE_URL" source.git
           TARGET_URL="https://x-access-token:$GITHUB_TOKEN@github.com/"
           TARGET_URL="$TARGET_URL$GITHUB_REPOSITORY.git"
           git -C source.git push --mirror "$TARGET_URL"
-
