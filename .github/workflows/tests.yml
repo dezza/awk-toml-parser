@@ -35,8 +35,7 @@ jobs:
           output=$(mktemp)
           status=0
 
-          "deps/test-framework/src/run.sh" "deps/test-framework" \
-            "tests" | tee "$output" || status=$?
+          "deps/test-framework/src/run.sh" "tests" | tee "$output" || status=$?
 
           stats=$(awk '
             /^  PASS:/ { passed++ }

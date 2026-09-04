@@ -3,12 +3,12 @@
 AWK="${AWK:-awk}"
 
 toml_get() {
-  "$TEST_PROJECT_DIR/toml-get.sh" "$@"
+  "$TFW_PROJECT_DIR/toml-get.sh" "$@"
 }
 
 toml_parse() {
   # shellcheck disable=SC2086
-  "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk" "$@" |
+  "$AWK" ${AWKFLAGS-} -f "$TFW_PROJECT_DIR/toml-parser.awk" "$@" |
     tr '\000' '%'
 }
 
@@ -118,7 +118,7 @@ test_errors() {
   printf '%s\n' '[invalid' >"$config"
   # shellcheck disable=SC2086
   assert_status 'rejects invalid section' 2 quietly \
-    "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk" "$config"
+    "$AWK" ${AWKFLAGS-} -f "$TFW_PROJECT_DIR/toml-parser.awk" "$config"
 
   printf '%s\n' 'value = [bare]' >"$config"
   assert_status 'rejects unsupported value' 2 quietly \
@@ -130,15 +130,15 @@ test_errors() {
 
   # shellcheck disable=SC2086
   assert_status 'rejects invalid parser invocation' 2 quietly \
-    "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk"
+    "$AWK" ${AWKFLAGS-} -f "$TFW_PROJECT_DIR/toml-parser.awk"
   assert_status 'rejects invalid query invocation' 2 quietly \
-    "$TEST_PROJECT_DIR/toml-get.sh" "$config"
+    "$TFW_PROJECT_DIR/toml-get.sh" "$config"
 }
 
 test_check() {
   # shellcheck disable=SC2086
   assert_success 'accepts empty input' quietly \
-    "$AWK" ${AWKFLAGS-} -f "$TEST_PROJECT_DIR/toml-parser.awk" /dev/null
+    "$AWK" ${AWKFLAGS-} -f "$TFW_PROJECT_DIR/toml-parser.awk" /dev/null
   assert_failure 'detects failure status' false
   actual=$(test_tmpdir nested)
   assert_equal 'creates relative temporary directory' \
