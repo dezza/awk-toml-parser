@@ -21,6 +21,10 @@ esac; done
   usage >&2; exit 2
 }
 
+case $1 in
+  -*) file=./$1; shift; set -- "$file" "$@";;
+esac
+
 [ -r "$1" ] || {
   printf '%s\n' "${4-}"; exit 0
 }

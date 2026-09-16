@@ -69,6 +69,13 @@ test_query_values() {
     "$config" group.one-two missing fallback
   assert_query 'missing file default' fallback \
     "$TEST_TMPDIR/missing.toml" any key fallback
+
+  cp "$config" "$TEST_TMPDIR/-values.toml"
+  actual=$(
+    cd "$TEST_TMPDIR"
+    toml_get -- -values.toml group.one-two enabled
+  )
+  assert_equal 'dash-prefixed file after separator' "$actual" true
 }
 
 test_extended_keys_and_arrays() {
