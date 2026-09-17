@@ -39,6 +39,7 @@ test_query_values() {
 	display.color = blue
 	items = ["$ONE", "${TWO}/value"]
 	arguments = ['--volume="$XDG_DATA_HOME"/data:/root/data']
+	spaced = ["a b", "c#d", "e!f"]
 	empty = []
 	EOF
 
@@ -64,6 +65,8 @@ test_query_values() {
   assert_query 'literal string array with quotes' \
     '--volume="$XDG_DATA_HOME"/data:/root/data' \
     "$config" group.one-two arguments
+  assert_query 'array items with spaces and punctuation' \
+    'a b,c#d,e!f' "$config" group.one-two spaced
   assert_query 'empty array' '' "$config" group.one-two empty
   assert_query 'default value' fallback \
     "$config" group.one-two missing fallback
@@ -131,7 +134,7 @@ test_errors() {
   assert_status 'rejects unsupported value' 2 quietly \
     toml_get "$config" '' value
 
-  printf '%s\n' 'value = ["invalid!"]' >"$config"
+  printf '%s\n' 'value = ["a,b"]' >"$config"
   assert_status 'rejects invalid array item' 2 quietly \
     toml_get "$config" '' value
 
