@@ -22,30 +22,54 @@ function die(message) {
 
 function usage() {
   stderr("usage: awk -f toml-parser.awk FILE [SECTION KEY [DEFAULT]]")
+  stderr("       awk -f toml-parser.awk FILE --query SECTION KEY DEFAULT ...")
   failed = 1
   exit 2
 }
 
-function parse_args() {
-  if (ARGC != 2 && ARGC != 4 && ARGC != 5)
+function parse_args(    position, count) {
+  if (ARGC < 2)
     usage()
 
   file = ARGV[1]
-  query_mode = ARGC >= 4
 
-  if (query_mode) {
-    wanted_section = ARGV[2]
-    wanted_key = ARGV[3]
-    have_default = ARGC == 5
+  if (ARGC >= 3 && ARGV[2] == "--query") {
+    count = ARGC - 3
+    if (count < 3 || count % 3 != 0)
+      usage()
 
-        if (have_default)
-            default_value = ARGV[4]
+    batch_mode = 1
 
-        delete ARGV[2]
-        delete ARGV[3]
-        if (have_default)
-            delete ARGV[4]
+    for (position = 0; position < count; position += 3) {
+      batch_section[++batch_count] = ARGV[3 + position]
+      batch_key[batch_count] = ARGV[4 + position]
+      batch_default[batch_count] = ARGV[5 + position]
+    }
+
+    for (position = 2; position < ARGC; position++)
+      delete ARGV[position]
+
+    return
   }
+
+  if (ARGC == 2)
+    return
+
+  if (ARGC != 4 && ARGC != 5)
+    usage()
+
+  query_mode = 1
+  wanted_section = ARGV[2]
+  wanted_key = ARGV[3]
+  have_default = ARGC == 5
+
+  if (have_default)
+    default_value = ARGV[4]
+
+  delete ARGV[2]
+  delete ARGV[3]
+  if (have_default)
+    delete ARGV[4]
 }
 
 function trim(text) {
@@ -239,7 +263,20 @@ function dotted_key(prefix, name) {
   return prefix == "" ? name : prefix "." name
 }
 
-function emit(name, value) {
+function emit(name, value,    key, position) {
+  if (batch_mode) {
+    key = dotted_key(section, name)
+
+    for (position = 1; position <= batch_count; position++)
+      if (!batch_found[position] && \
+          dotted_key(batch_section[position], batch_key[position]) == key) {
+        batch_value[position] = value
+        batch_found[position] = 1
+      }
+
+    return
+  }
+
   if (query_mode) {
     if (dotted_key(section, name) == \
         dotted_key(wanted_section, wanted_key)) {
@@ -255,10 +292,20 @@ function emit(name, value) {
   put_field(value)
 }
 
+function print_batch(    position) {
+  for (position = 1; position <= batch_count; position++)
+    if (batch_found[position])
+      print batch_value[position]
+    else
+      print batch_default[position]
+}
+
 BEGIN {
   array_line = ""
   failed = 0
     found = 0
+    batch_mode = 0
+    query_mode = 0
     section = ""
     parse_args()
 }
@@ -295,6 +342,9 @@ BEGIN {
 END {
   if (!failed && array_line != "")
     die("unterminated array")
-  if (!failed && query_mode && !found && have_default)
+
+  if (!failed && batch_mode) {
+    print_batch()
+  } else if (!failed && query_mode && !found && have_default)
     print default_value
 }

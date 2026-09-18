@@ -122,6 +122,67 @@ test_parse_fields() {
     '%root%value%first%key%one%second.part%key%two%'
 }
 
+test_batch_query() {
+  config=$TEST_TMPDIR/batch.toml
+  cat >"$config" <<-'EOF'
+	root = one
+	[group]
+	first = "alpha"
+	second = "beta"
+	empty = []
+	EOF
+
+  actual=$(toml_get "$config" --query \
+    group first DEFAULT1 \
+    group absent DEFAULT2 \
+    '' root DEFAULT3)
+  assert_equal 'batch query order and defaults' "$actual" \
+    "$(printf 'alpha\nDEFAULT2\none')"
+
+  actual=$(toml_get "$config" --query \
+    group empty DEFAULT \
+    group second DEFAULT \
+    group second DEFAULT)
+  assert_equal 'batch query empty and repeated values' "$actual" \
+    "$(printf '\nbeta\nbeta')"
+
+  actual=$(toml_get "$TEST_TMPDIR/missing.toml" --query \
+    group first DEFAULT1 \
+    group second '' \
+    group third DEFAULT3)
+  assert_equal 'batch query missing file defaults' "$actual" \
+    "$(printf 'DEFAULT1\n\nDEFAULT3')"
+
+  # shellcheck disable=SC2086
+  actual=$("$AWK" ${AWKFLAGS-} -f "$TFW_PROJECT_DIR/toml-parser.awk" \
+    "$config" --query '' root ROOT group first FIRST group absent ABSENT)
+  assert_equal 'batch query direct invocation' "$actual" \
+    "$(printf 'one\nalpha\nABSENT')"
+
+  assert_query 'single-key query unchanged' alpha "$config" group first
+
+  assert_status 'rejects incomplete batch query' 2 quietly \
+    toml_get "$config" --query group first
+  assert_status 'rejects malformed batch query' 2 quietly \
+    toml_get "$config" --query group first DEFAULT extra
+  assert_status 'rejects batch query without triples' 2 quietly \
+    toml_get "$config" --query
+
+  printf '%s\n' 'value = [bare]' >"$config"
+  if toml_get "$config" --query '' value DEFAULT \
+      2>"$TEST_TMPDIR/error" >"$TEST_TMPDIR/output"; then
+    status=0
+  else
+    status=$?
+  fi
+  assert_equal 'batch query parse error status' "$status" 2
+  assert_equal 'batch query parse error output' \
+    "$(cat "$TEST_TMPDIR/output")" ''
+  actual=$(cat "$TEST_TMPDIR/error")
+  assert_equal 'batch query parse error diagnostic' "$actual" \
+    "$config:1: invalid array"
+}
+
 test_errors() {
   config=$TEST_TMPDIR/invalid.toml
 
@@ -166,6 +227,7 @@ test_hooks() {
 test_case 'query values' test_query_values
 test_case 'extended keys and arrays' test_extended_keys_and_arrays
 test_case 'parse fields' test_parse_fields
+test_case 'batch query' test_batch_query
 test_case 'errors' test_errors
 test_case 'check' test_check
 test_case 'hooks' test_hooks
