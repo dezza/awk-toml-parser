@@ -16,7 +16,7 @@ jobs:
     if: >-
       github.event_name != 'workflow_run' ||
       github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -26,6 +26,11 @@ jobs:
         run: |
           git -c url.https://codeberg.org/.insteadOf=ssh://git@codeberg.org/ \
             submodule update --init --depth=1 --recursive
+
+      - name: Install GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes gh
 
       - name: Run tests
         shell: bash
